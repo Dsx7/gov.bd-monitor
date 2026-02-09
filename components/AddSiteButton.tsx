@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { addMissingSite } from "@/app/actions";
-import { useToast } from "@/components/ui/use-toast"; // If you have Shadcn Toast, or use alert
+import { toast } from "sonner"; // 🟢 Using Sonner
 
 export default function AddSiteButton() {
   const [open, setOpen] = useState(false);
@@ -21,9 +21,10 @@ export default function AddSiteButton() {
     
     if (result.success) {
       setOpen(false);
-      alert("✅ " + result.message); // Replace with Toast if available
+      toast.success(result.message); // 🟢 Success Toast
     } else {
       setMessage(result.message || "Failed to add");
+      toast.error(result.message || "Failed to add website"); // 🔴 Error Toast
     }
     setLoading(false);
   }
@@ -34,7 +35,7 @@ export default function AddSiteButton() {
       <div className="hidden md:block">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-slate-900 hover:bg-slate-800 text-white gap-2 shadow-lg hover:shadow-xl transition-all">
+            <Button className="bg-[#006a4e] hover:bg-[#00553e] text-white gap-2 shadow-lg hover:shadow-xl transition-all">
               <Plus className="h-4 w-4" /> Add Website
             </Button>
           </DialogTrigger>
@@ -46,7 +47,7 @@ export default function AddSiteButton() {
       <div className="md:hidden fixed bottom-6 right-6 z-50">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="icon" className="h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-2xl transition-transform hover:scale-105">
+            <Button size="icon" className="h-14 w-14 rounded-full bg-[#006a4e] hover:bg-[#00553e] text-white shadow-2xl transition-transform hover:scale-105">
               <Plus className="h-8 w-8" />
             </Button>
           </DialogTrigger>
@@ -59,10 +60,10 @@ export default function AddSiteButton() {
 
 function AddSiteForm({ loading, message, onSubmit }: any) {
   return (
-    <DialogContent className="sm:max-w-md">
+    <DialogContent className="sm:max-w-md bg-white">
       <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <Globe className="h-5 w-5 text-blue-600" /> 
+        <DialogTitle className="flex items-center gap-2 text-[#006a4e]">
+          <Globe className="h-5 w-5" /> 
           Submit a Missing Website
         </DialogTitle>
       </DialogHeader>
@@ -84,7 +85,7 @@ function AddSiteForm({ loading, message, onSubmit }: any) {
         )}
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700">
+          <Button type="submit" disabled={loading} className="w-full bg-[#f42a41] hover:bg-[#d11f33] text-white">
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Submit Request"}
           </Button>
         </div>
