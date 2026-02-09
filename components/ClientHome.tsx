@@ -4,18 +4,18 @@ import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import { 
   Search, Wifi, WifiOff, ChevronLeft, ChevronRight, Loader2, ExternalLink, 
-  Filter, CheckCircle, XCircle 
+  CheckCircle, XCircle 
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { getSites } from "@/app/actions";
+import PopularServices from "./PopularServices"; // 🟢 IMPORT NEW COMPONENT
 
 export default function ClientHome({ initialData }: any) {
   // --- STATE ---
   const [sites, setSites] = useState(initialData.sites || []);
   const [stats, setStats] = useState(initialData.globalStats || { total: 0, up: 0, down: 0 });
-  const [totalCount, setTotalCount] = useState(initialData.totalCount || 0);
   const [totalPages, setTotalPages] = useState(initialData.totalPages || 0);
   
   // Filters
@@ -27,16 +27,14 @@ export default function ClientHome({ initialData }: any) {
   
   const [loading, setLoading] = useState(false);
 
-  // --- FETCH DATA (Keep URL Clean) ---
+  // --- FETCH DATA ---
   useEffect(() => {
-    // Skip first load (initialData is used), only fetch on changes
     const fetchData = async () => {
       setLoading(true);
       const data = await getSites(query, page, category, status);
       setSites(data.sites);
-      setTotalCount(data.totalCount);
       setTotalPages(data.totalPages);
-      // setStats(data.globalStats); // Optional: Update header stats on filter
+      // setStats(data.globalStats); 
       setLoading(false);
     };
 
@@ -46,6 +44,12 @@ export default function ClientHome({ initialData }: any) {
   // Reset page when filters change
   useEffect(() => setPage(1), [query, category, status]);
 
+  // 🟢 NEW: Handler for clicking the Quick Cards
+  const handleQuickSearch = (term: string) => {
+    setText(term); // This updates the search box immediately
+    window.scrollTo({ top: 400, behavior: 'smooth' }); // Smooth scroll to results
+  };
+
   const categories = ["All", "Education", "Health", "Law & Order", "Agriculture", "Local Admin", "General"];
   const upRate = stats.total > 0 ? ((stats.up / stats.total) * 100).toFixed(1) : "0.0";
 
@@ -53,8 +57,8 @@ export default function ClientHome({ initialData }: any) {
     <div className="max-w-7xl mx-auto px-4 py-8">
       
       {/* 📊 HEADER STATS */}
-      <div className="bg-[#006a4e] text-white rounded-2xl p-6 mb-8 shadow-lg relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+      <div className="bg-[#006a4e] text-white rounded-2xl p-6 mb-8 shadow-lg relative overflow-hidden ring-4 ring-[#006a4e]/10">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 bg-[#f42a41] rounded-full flex items-center justify-center shadow-md border-4 border-[#00553e]">
@@ -64,8 +68,8 @@ export default function ClientHome({ initialData }: any) {
                 <h1 className="text-3xl font-extrabold tracking-tight">
                   Gov.bd <span className="text-green-200">Monitor</span>
                 </h1>
-                <p className="text-green-100 text-sm opacity-90">
-                  Checking {stats.total.toLocaleString()} Government Portals
+                <p className="text-green-100 text-sm opacity-90 font-medium">
+                  Live Status of {stats.total.toLocaleString()} Government Services
                 </p>
               </div>
             </div>
@@ -78,16 +82,19 @@ export default function ClientHome({ initialData }: any) {
         </div>
       </div>
 
+      {/* 🟢 POPULAR SERVICES (Quick Filters) */}
+      <PopularServices onQuickSearch={handleQuickSearch} />
+
       {/* 🔍 FILTERS BAR (Sticky) */}
-      <div className="sticky top-4 z-30 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-gray-100 ring-1 ring-gray-200 mb-8">
+      <div className="sticky top-4 z-30 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-gray-100 ring-1 ring-gray-200 mb-8 transition-all">
         <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
           
           {/* Search Input */}
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
             <Input 
-              placeholder="Search 24,000+ services..." 
-              className="pl-10 h-11 bg-white border-gray-300 focus:border-[#006a4e] focus:ring-[#006a4e]/20"
+              placeholder="Search services (e.g. passport, nid, brta)..." 
+              className="pl-10 h-11 bg-white border-gray-300 focus:border-[#006a4e] focus:ring-[#006a4e]/20 text-base"
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
@@ -145,7 +152,6 @@ export default function ClientHome({ initialData }: any) {
                 <div className={`relative h-12 w-12 rounded-xl flex items-center justify-center p-1 border overflow-hidden
                   ${isUp ? 'bg-white border-green-50' : 'bg-red-50 border-red-100'}`}>
                   
-                  {/* Image with Fallback */}
                   <img 
                     src={faviconUrl}
                     alt=""
@@ -209,10 +215,10 @@ export default function ClientHome({ initialData }: any) {
       {sites.length === 0 && !loading && (
         <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-200">
           <div className="bg-gray-50 p-4 rounded-full inline-block mb-4">
-             <Filter className="h-8 w-8 text-gray-400" />
+             <FilterIcon className="h-8 w-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-bold text-gray-700">No websites found</h3>
-          <p className="text-gray-500">Try adjusting your filters or running the categorize script.</p>
+          <p className="text-gray-500">Try searching for something else.</p>
         </div>
       )}
 
@@ -252,5 +258,11 @@ function StatBox({ label, value, color }: any) {
       <span className={`text-xl font-bold ${color ? "" : "text-white"}`}>{value}</span>
       <span className={`text-[10px] font-bold uppercase tracking-widest ${color ? "" : "text-green-300"}`}>{label}</span>
     </div>
+  )
+}
+
+function FilterIcon({ className }: any) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
   )
 }

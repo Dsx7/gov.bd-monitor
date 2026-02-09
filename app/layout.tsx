@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { Toaster } from "sonner"; // 🟢 Added Sonner Toaster
+import { Toaster } from "sonner"; 
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -13,11 +13,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Gov.bd Monitor - Is the server down?",
     description: "Real-time availability monitoring for Bangladesh government digital services.",
-    url: "https://your-domain.com",
+    url: "https://your-domain.com", // ⚠️ Update this when you deploy
     siteName: "Gov.bd Monitor",
     images: [
       {
-        url: "https://your-domain.com/og-image.jpg", // You can add an image later
+        url: "https://your-domain.com/og-image.jpg", 
         width: 1200,
         height: 630,
       },
@@ -40,6 +40,29 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  // 🟢 SEO: JSON-LD Structured Data for Google
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Gov.bd Monitor",
+    "url": "https://your-domain.com", // ⚠️ Update this when you deploy
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://your-domain.com/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    },
+    "description": "Real-time uptime monitoring for 24,000+ Bangladesh government websites including NID, Passport, and BRTA.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Gov.bd Monitor Team",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://your-domain.com/logo.png" // Optional: Add a logo later
+      }
+    }
+  };
+
   return (
     <html lang="en">
       <head>
@@ -47,9 +70,16 @@ export default function RootLayout({
         <link rel="canonical" href="https://your-domain.com" />
       </head>
       <body className={`${inter.className} bg-slate-50 text-slate-900 antialiased`}>
+        
+        {/* 🟢 Inject JSON-LD Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+
         {children}
         
-        {/* 🟢 Added Toaster for Notifications */}
+        {/* 🟢 Notifications */}
         <Toaster richColors position="top-center" />
       </body>
     </html>

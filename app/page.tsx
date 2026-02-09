@@ -1,5 +1,6 @@
 import { getSites } from "@/app/actions";
 import ClientHome from "@/components/ClientHome";
+import PopularServices from "@/components/PopularServices";
 import AddSiteButton from "@/components/AddSiteButton";
 import { Github, Linkedin, Star, Code, Heart } from "lucide-react";
 
@@ -20,6 +21,10 @@ export default async function Home() {
             <AddSiteButton />
           </div>
           
+		  {/* Client Side Search/Grid */}
+         {/*  <PopularServices /> */}
+
+		  
           {/* Client Side Search/Grid */}
           <ClientHome initialData={initialData} />
        </div>
