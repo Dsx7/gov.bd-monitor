@@ -41,8 +41,8 @@ export async function getSites(
     filter.status = status === "Online" ? "UP" : "DOWN";
   }
 
-  // Parallel Fetching for Speed
-  const [sites, totalCount, stats] = await Promise.all([
+  // Parallel Fetching for Speed (🟢 ADDED: latestUpdate check)
+  const [sites, totalCount, stats, latestUpdate] = await Promise.all([
     // Fetch Filtered Sites
     Site.find(filter)
       .sort({ status: 1, name: 1 })
@@ -64,7 +64,10 @@ export async function getSites(
           down: { $sum: { $cond: [{ $eq: ["$status", "DOWN"] }, 1, 0] } }
         }
       }
-    ])
+    ]),
+
+    // 🟢 NEW: Get the absolute most recent scan time across the whole DB
+    Site.findOne().sort({ lastChecked: -1 }).select('lastChecked').lean()
   ]);
 
   // Clean Data
@@ -75,7 +78,8 @@ export async function getSites(
     sites: sanitizedSites,
     totalCount,
     totalPages: Math.ceil(totalCount / limit),
-    globalStats
+    globalStats,
+    lastUpdate: latestUpdate?.lastChecked || null // 🟢 Send this to frontend
   };
 }
 

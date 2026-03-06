@@ -124,3 +124,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+/* Add this at the bottom of app/globals.css */
+
+.animate-shimmer {
+  animation: shimmer 1.5s infinite linear;
+  background-size: 200% 100%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
