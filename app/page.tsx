@@ -1,8 +1,12 @@
+import { Suspense } from "react";
 import { getSites } from "@/app/actions";
 import ClientHome from "@/components/ClientHome";
 import PopularServices from "@/components/PopularServices";
 import AddSiteButton from "@/components/AddSiteButton";
 import { Github, Linkedin, Star, Code, Heart } from "lucide-react";
+
+// 🟢 THIS TELLS NEXT.JS TO FETCH FRESH DATA AND ALLOW URL PARAMS
+export const dynamic = "force-dynamic";
 
 // Cache data for 60 seconds to keep it fast
 export const revalidate = 60;
@@ -12,7 +16,7 @@ export default async function Home() {
   const initialData = await getSites("", 1);
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col">
+    <main className="min-h-screen bg-gray-50 flex flex-col dark:bg-slate-950">
        
        {/* MAIN CONTENT WRAPPER (Flex-grow pushes footer down) */}
        <div className="relative flex-grow">
@@ -21,16 +25,22 @@ export default async function Home() {
             <AddSiteButton />
           </div>
           
-		  {/* Client Side Search/Grid */}
-         {/*  <PopularServices /> */}
+      {/* Client Side Search/Grid */}
+         {/* <PopularServices /> */}
 
-		  
-          {/* Client Side Search/Grid */}
-          <ClientHome initialData={initialData} />
+      
+          {/* 🟢 SUSPENSE REQUIRED FOR CLIENT URL PARAMETERS */}
+          <Suspense fallback={
+            <div className="flex items-center justify-center min-h-[50vh]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#006a4e]"></div>
+            </div>
+          }>
+            <ClientHome initialData={initialData} />
+          </Suspense>
        </div>
 
       {/* 🇧🇩 FOOTER SECTION */}
-      <footer className="bg-[#006a4e] text-green-50 py-12 border-t-4 border-[#f42a41] relative overflow-hidden">
+      <footer className="bg-[#006a4e] text-green-50 py-12 border-t-4 border-[#f42a41] relative overflow-hidden dark:bg-emerald-950 dark:border-rose-600 mt-10">
         
         {/* Background Pattern (Subtle) */}
         <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
