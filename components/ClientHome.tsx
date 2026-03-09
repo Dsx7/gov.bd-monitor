@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
-import { useSearchParams, useRouter } from "next/navigation";
 import { 
-  Search, Wifi, WifiOff, ChevronLeft, ChevronRight, Loader2, ExternalLink, 
-  CheckCircle, XCircle, Share2, Clock
+  Search, Wifi, WifiOff, ChevronLeft, ChevronRight, ExternalLink, 
+  CheckCircle, XCircle, Share2, Clock, SearchX
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,9 +14,6 @@ import PopularServices from "./PopularServices";
 import { toast } from "sonner"; 
 
 export default function ClientHome({ initialData }: any) {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
   // --- STATE ---
   const [sites, setSites] = useState(initialData.sites || []);
   const [stats, setStats] = useState(initialData.globalStats || { total: 0, up: 0, down: 0 });
@@ -25,33 +21,14 @@ export default function ClientHome({ initialData }: any) {
   const [totalPages, setTotalPages] = useState(initialData.totalPages || 0);
   
   const [page, setPage] = useState(1);
-  const [text, setText] = useState(searchParams.get("q") || "");
-  const [query] = useDebounce(text, 500);
+  const [text, setText] = useState(""); // 🟢 Clean URL: No longer reading from searchParams
+  const [query] = useDebounce(text, 400); // 400ms delay for faster feel
   
   const [category, setCategory] = useState("All");
   const [status, setStatus] = useState("All");
   const [loading, setLoading] = useState(false);
 
-  // 🟢 SYNC URL WHEN USER TYPES
-  useEffect(() => {
-    const currentSearch = window.location.search;
-    const params = new URLSearchParams(currentSearch);
-    
-    if (query) {
-      params.set("q", query);
-    } else {
-      params.delete("q");
-    }
-
-    const newQueryString = params.toString();
-    const currentQueryString = currentSearch.replace('?', '');
-
-    if (newQueryString !== currentQueryString) {
-      router.replace(`/?${newQueryString}`, { scroll: false });
-    }
-  }, [query, router]);
-
-  // --- FETCH DATA ---
+  // --- FETCH DATA (SILENTLY IN BACKGROUND) ---
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -61,9 +38,13 @@ export default function ClientHome({ initialData }: any) {
       if(data.lastUpdate) setLastUpdate(data.lastUpdate);
       setLoading(false);
     };
+    
+    // Only fetch if it's not the initial mount with empty parameters
+    // or if the parameters have actually changed.
     fetchData();
   }, [query, page, category, status]);
 
+  // Reset to page 1 when search or filters change
   useEffect(() => setPage(1), [query, category, status]);
 
   const handleQuickSearch = (term: string) => {
@@ -73,7 +54,7 @@ export default function ClientHome({ initialData }: any) {
 
   const handleShare = async (site: any) => {
     const shareText = `🚨 ${site.name} is currently ${site.status}! Checked via Gov.bd Monitor.`;
-    const shareUrl = `https://gov-bd-monitor.vercel.app/?q=${encodeURIComponent(site.name)}`; 
+    const shareUrl = `https://gov-bd-monitor.vercel.app/`; // Clean URL share
 
     if (navigator.share) {
       try {
@@ -81,13 +62,16 @@ export default function ClientHome({ initialData }: any) {
       } catch (err) { console.log("Share cancelled"); }
     } else {
       navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
-      toast.success("Link copied to clipboard!");
+      toast.success("Copied to clipboard!");
     }
   };
 
   const categories = ["All", "Education", "Health", "Law & Order", "Agriculture", "Local Admin", "General"];
   const upRate = stats.total > 0 ? ((stats.up / stats.total) * 100).toFixed(1) : "0.0";
   const timeSinceUpdate = lastUpdate ? formatDistanceToNow(new Date(lastUpdate), { addSuffix: true }) : "recently";
+
+  // Check if we are currently waiting for the debounce or the API
+  const isSearching = text !== query || loading;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -127,22 +111,32 @@ export default function ClientHome({ initialData }: any) {
       {/* 🔍 FILTERS BAR */}
       <div className="sticky top-4 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-800 ring-1 ring-gray-200 dark:ring-slate-800 mb-8 transition-all">
         <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400 dark:text-slate-500" />
+          
+          {/* SEARCH INPUT */}
+          <div className="relative flex-1 w-full group">
+            <Search className={`absolute left-3 top-3 h-5 w-5 transition-colors ${isSearching ? 'text-[#006a4e] dark:text-emerald-500' : 'text-gray-400 dark:text-slate-500'}`} />
             <Input 
-              placeholder="Search by name or URL..." 
-              className="pl-10 h-11 bg-white dark:bg-slate-950 border-gray-300 dark:border-slate-700 focus:border-[#006a4e] dark:focus:border-emerald-500 text-base dark:text-white dark:placeholder:text-slate-600"
+              placeholder="Search domains, ministries, or services (e.g., passport)" 
+              className="pl-10 pr-10 h-11 bg-white dark:bg-slate-950 border-gray-300 dark:border-slate-700 focus:border-[#006a4e] dark:focus:border-emerald-500 text-base dark:text-white dark:placeholder:text-slate-600 shadow-sm"
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
+            {/* 🟢 Loading Spinner inside Search Bar */}
+            {isSearching && (
+              <div className="absolute right-3 top-3 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#006a4e] dark:border-emerald-500"></div>
+              </div>
+            )}
           </div>
+
+          {/* DROPDOWNS */}
           <div className="flex w-full md:w-auto gap-2">
-            <select className="h-11 px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm font-medium text-gray-700 dark:text-slate-300 outline-none focus:border-[#006a4e] focus:ring-2 focus:ring-[#006a4e]/20 w-1/2 md:w-auto" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <select className="h-11 px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm font-medium text-gray-700 dark:text-slate-300 outline-none focus:border-[#006a4e] dark:focus:border-emerald-500 focus:ring-2 focus:ring-[#006a4e]/20 w-1/2 md:w-auto" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="All">All Status</option>
               <option value="Online">🟢 Online</option>
               <option value="Offline">🔴 Offline</option>
             </select>
-            <select className="h-11 px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm font-medium text-gray-700 dark:text-slate-300 outline-none focus:border-[#006a4e] focus:ring-2 focus:ring-[#006a4e]/20 w-1/2 md:w-auto" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <select className="h-11 px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm font-medium text-gray-700 dark:text-slate-300 outline-none focus:border-[#006a4e] dark:focus:border-emerald-500 focus:ring-2 focus:ring-[#006a4e]/20 w-1/2 md:w-auto" value={category} onChange={(e) => setCategory(e.target.value)}>
                {categories.map(cat => <option key={cat} value={cat}>{cat === "All" ? "Categories" : cat}</option>)}
             </select>
           </div>
@@ -152,7 +146,7 @@ export default function ClientHome({ initialData }: any) {
       {/* 📦 RESULTS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         
-        {loading ? (
+        {loading && sites.length === 0 ? (
            Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)
         ) : sites.length > 0 ? (
           sites.map((site: any) => {
@@ -161,7 +155,11 @@ export default function ClientHome({ initialData }: any) {
             const faviconUrl = `https://www.google.com/s2/favicons?domain=${site.url}&sz=128`;
 
             return (
-              <div key={site._id} className={`group bg-white dark:bg-slate-900 rounded-xl p-5 border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col justify-between ${isUp ? 'border-gray-100 dark:border-slate-800 hover:border-green-200 dark:hover:border-emerald-700' : 'border-red-50 dark:border-rose-900/30 hover:border-red-200 dark:hover:border-rose-800'}`}>
+              <div 
+  key={site._id} 
+  onClick={() => window.open(site.url, '_blank')}
+  className={`cursor-pointer group bg-white dark:bg-slate-900 rounded-xl p-5 border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col justify-between ${isUp ? 'border-gray-100 dark:border-slate-800 hover:border-green-200 dark:hover:border-emerald-700' : 'border-red-50 dark:border-rose-900/30 hover:border-red-200 dark:hover:border-rose-800'}`}
+>
                 
                 {/* Status Top Line */}
                 <div className={`absolute top-0 left-0 w-full h-1.5 ${isUp ? 'bg-[#006a4e] dark:bg-emerald-500' : 'bg-[#f42a41] dark:bg-rose-500'}`} />
@@ -174,9 +172,16 @@ export default function ClientHome({ initialData }: any) {
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <button onClick={() => handleShare(site)} className="p-1.5 rounded-md text-gray-400 hover:text-[#006a4e] dark:hover:text-emerald-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" title="Share Status">
-                        <Share2 className="h-4 w-4" />
-                      </button>
+  <button 
+    onClick={(e) => {
+      e.stopPropagation(); // 👈 This stops the card click!
+      handleShare(site);
+    }} 
+    className="p-1.5 rounded-md text-gray-400 hover:text-[#006a4e] dark:hover:text-emerald-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" 
+    title="Share Status"
+  >
+    <Share2 className="h-4 w-4" />
+  </button>
                       <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase ${isUp ? 'bg-green-50 dark:bg-emerald-950/50 text-[#006a4e] dark:text-emerald-400' : 'bg-red-50 dark:bg-rose-950/50 text-[#f42a41] dark:text-rose-400'}`}>
                         {isUp ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
                         {isUp ? "Online" : "Offline"}
@@ -195,7 +200,6 @@ export default function ClientHome({ initialData }: any) {
                   </a>
                 </div>
 
-                {/* 🟢 NEW: History & Footer Section */}
                 <div className="mt-6">
                   {/* History Bar Chart */}
                   <UptimeHistory history={site.history} />
@@ -215,12 +219,45 @@ export default function ClientHome({ initialData }: any) {
       </div>
 
       {sites.length === 0 && !loading && (
-        <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-gray-200 dark:border-slate-800">
-          <h3 className="text-lg font-bold text-gray-700 dark:text-slate-300">No websites found</h3>
+        <div className="flex flex-col items-center justify-center py-24 px-4 bg-white dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-gray-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+          {/* Subtle Background Gradient */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-50 dark:to-[#0b1120] pointer-events-none"></div>
+          
+          {/* Animated Icon Wrapper */}
+          <div className="relative mb-6 z-10">
+            <div className="absolute inset-0 bg-[#f42a41]/10 dark:bg-rose-500/10 rounded-full animate-ping"></div>
+            <div className="relative bg-white dark:bg-slate-950 p-5 rounded-full shadow-lg border border-gray-100 dark:border-slate-800 text-gray-400 dark:text-slate-500 group-hover:text-[#f42a41] dark:group-hover:text-rose-500 transition-colors duration-500">
+              <SearchX className="h-10 w-10" />
+            </div>
+          </div>
+
+          <h3 className="text-2xl font-extrabold text-gray-800 dark:text-slate-200 mb-2 relative z-10 tracking-tight">
+            No websites found
+          </h3>
+          
+          <p className="text-gray-500 dark:text-slate-400 text-center max-w-md mb-8 relative z-10 leading-relaxed">
+            We couldn't find any government services matching {text ? (
+              <span className="font-semibold text-gray-700 dark:text-slate-300 px-1">"{text}"</span>
+            ) : "your current filters."}
+          </p>
+
+          {/* 🟢 Actionable Clear Button */}
+          <button 
+            onClick={() => {
+              setText("");
+              setCategory("All");
+              setStatus("All");
+            }}
+            className="relative z-10 flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-xl font-bold transition-all shadow-sm hover:shadow-md active:scale-95 border border-gray-200 dark:border-slate-700"
+          >
+            <XCircle className="h-5 w-5 opacity-70" />
+            Clear Search & Filters
+          </button>
         </div>
       )}
 
-      {totalPages > 1 && !loading && (
+      {/* 📄 PAGINATION */}
+      {totalPages > 1 && (
         <div className="flex justify-center items-center gap-4 pt-12 pb-20">
           <Button variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="rounded-full px-6 border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
             <ChevronLeft className="h-4 w-4 mr-2" /> Prev
@@ -235,13 +272,10 @@ export default function ClientHome({ initialData }: any) {
   );
 }
 
-// 🟢 NEW: UPTIME HISTORY COMPONENT
+// 🟢 UPTIME HISTORY COMPONENT
 function UptimeHistory({ history = [] }: { history: any[] }) {
-  // We want to show 15 bars. If there are less than 15 historical records, we fill the rest with nulls.
   const TOTAL_BARS = 15;
   const safeHistory = Array.isArray(history) ? history : [];
-  
-  // Pad the array to always have 15 items, keeping the newest at the end
   const paddedHistory = [...Array(TOTAL_BARS - safeHistory.length).fill(null), ...safeHistory].slice(-TOTAL_BARS);
 
   return (
@@ -257,7 +291,7 @@ function UptimeHistory({ history = [] }: { history: any[] }) {
       
       <div className="flex items-center gap-[2px] h-6 w-full">
         {paddedHistory.map((record, i) => {
-          let bgColor = "bg-gray-100 dark:bg-slate-800"; // No data yet
+          let bgColor = "bg-gray-100 dark:bg-slate-800"; 
           let tooltip = "No data yet";
           
           if (record) {
@@ -280,7 +314,7 @@ function UptimeHistory({ history = [] }: { history: any[] }) {
   );
 }
 
-// SKELETON LOADER COMPONENT
+// 🟢 SKELETON LOADER COMPONENT
 function SkeletonCard() {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-gray-100 dark:border-slate-800 shadow-sm relative overflow-hidden h-[260px]">
@@ -298,7 +332,7 @@ function SkeletonCard() {
   );
 }
 
-// STAT BOX COMPONENT
+// 🟢 STAT BOX COMPONENT
 function StatBox({ label, value, color, textColor, labelColor }: any) {
   return (
     <div className={`flex flex-col items-center p-3 rounded-lg min-w-[80px] ${color}`}>

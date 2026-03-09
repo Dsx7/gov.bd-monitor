@@ -45,7 +45,7 @@ export async function getSites(
   const [sites, totalCount, stats, latestUpdate] = await Promise.all([
     // Fetch Filtered Sites
     Site.find(filter)
-      .sort({ status: 1, name: 1 })
+      .sort({ status: -1, name: 1 })
       .skip(skip)
       .limit(limit)
       .lean(),

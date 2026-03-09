@@ -1,38 +1,31 @@
 import { Suspense } from "react";
 import { getSites } from "@/app/actions";
 import ClientHome from "@/components/ClientHome";
-import PopularServices from "@/components/PopularServices";
 import AddSiteButton from "@/components/AddSiteButton";
 import { Github, Linkedin, Star, Code, Heart } from "lucide-react";
 
-// 🟢 THIS TELLS NEXT.JS TO FETCH FRESH DATA AND ALLOW URL PARAMS
+// 🟢 TELLS NEXT.JS TO FETCH FRESH DATA
 export const dynamic = "force-dynamic";
-
-// Cache data for 60 seconds to keep it fast
-export const revalidate = 60;
+export const revalidate = 60; // Cache for 60s to stay fast
 
 export default async function Home() {
-  // Fetch initial data (Page 1, Empty Query) on the server
+  // Fetch initial data (Page 1, Empty Query) on the server for fast initial load
   const initialData = await getSites("", 1);
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col dark:bg-slate-950">
+    <main className="min-h-screen bg-gray-50 flex flex-col dark:bg-slate-950 font-sans selection:bg-emerald-500/30">
        
-       {/* MAIN CONTENT WRAPPER (Flex-grow pushes footer down) */}
+       {/* MAIN CONTENT WRAPPER */}
        <div className="relative flex-grow">
           {/* Add Button positioned absolutely */}
           <div className="absolute top-6 right-4 z-50 md:right-8">
             <AddSiteButton />
           </div>
           
-      {/* Client Side Search/Grid */}
-         {/* <PopularServices /> */}
-
-      
-          {/* 🟢 SUSPENSE REQUIRED FOR CLIENT URL PARAMETERS */}
+          {/* 🟢 SUSPENSE WRAPPER */}
           <Suspense fallback={
             <div className="flex items-center justify-center min-h-[50vh]">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#006a4e]"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#006a4e] dark:border-emerald-500"></div>
             </div>
           }>
             <ClientHome initialData={initialData} />
@@ -40,9 +33,9 @@ export default async function Home() {
        </div>
 
       {/* 🇧🇩 FOOTER SECTION */}
-      <footer className="bg-[#006a4e] text-green-50 py-12 border-t-4 border-[#f42a41] relative overflow-hidden dark:bg-emerald-950 dark:border-rose-600 mt-10">
+      <footer className="bg-[#006a4e] text-green-50 py-12 border-t-4 border-[#f42a41] relative overflow-hidden dark:bg-[#050b14] dark:border-rose-600 mt-10">
         
-        {/* Background Pattern (Subtle) */}
+        {/* Background Pattern */}
         <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
             <div className="absolute right-0 bottom-0 w-64 h-64 bg-white rounded-full blur-3xl transform translate-y-1/2 translate-x-1/2"></div>
             <div className="absolute left-0 top-0 w-32 h-32 bg-[#f42a41] rounded-full blur-3xl transform -translate-y-1/2 -translate-x-1/2"></div>
@@ -54,13 +47,13 @@ export default async function Home() {
             {/* 1. PROJECT INFO */}
             <div className="space-y-2 max-w-sm">
               <h3 className="text-2xl font-extrabold text-white flex items-center justify-center md:justify-start gap-2">
-                Gov.bd <span className="text-green-300">Monitor</span>
+                Gov.bd <span className="text-green-300 dark:text-emerald-400">Monitor</span>
               </h3>
               <p className="text-sm opacity-80 leading-relaxed">
                 An open-source initiative to monitor the uptime of 24,000+ Bangladesh government digital services in real-time.
               </p>
               <div className="pt-2">
-                <span className="inline-block bg-[#00553e] text-green-300 text-xs px-3 py-1 rounded-full border border-green-800">
+                <span className="inline-block bg-[#00553e] dark:bg-emerald-900/30 text-green-300 dark:text-emerald-400 text-xs px-3 py-1 rounded-full border border-green-800 dark:border-emerald-800/50">
                   Unofficial / Not Govt Affiliated
                 </span>
               </div>
@@ -68,7 +61,7 @@ export default async function Home() {
 
             {/* 2. DEVELOPER PROFILE */}
             <div className="flex flex-col items-center">
-               <p className="text-sm font-medium text-green-200 mb-3 flex items-center gap-1">
+               <p className="text-sm font-medium text-green-200 dark:text-slate-400 mb-3 flex items-center gap-1">
                  Developed with <Heart className="h-3 w-3 text-[#f42a41] fill-[#f42a41]" /> by
                </p>
                <h4 className="text-lg font-bold text-white mb-3">Al Helal Mohammod Bayijid</h4>
@@ -100,12 +93,11 @@ export default async function Home() {
 
             {/* 3. REPO & API LINKS (CTA) */}
             <div className="flex flex-col items-center md:items-end gap-3">
-               <p className="text-xs font-bold uppercase tracking-widest text-green-300">Developers</p>
+               <p className="text-xs font-bold uppercase tracking-widest text-green-300 dark:text-slate-500">Developers</p>
                
-               {/* 🟢 NEW: API DOCS BUTTON */}
                <a 
                  href="/api-docs" 
-                 className="flex items-center gap-2 text-white hover:text-green-200 font-bold transition-colors text-sm mb-1"
+                 className="flex items-center gap-2 text-white hover:text-green-200 dark:hover:text-emerald-400 font-bold transition-colors text-sm mb-1"
                >
                  <Code className="h-4 w-4" />
                  View API Documentation
@@ -115,9 +107,9 @@ export default async function Home() {
                  href="https://github.com/Dsx7/gov.bd-monitor" 
                  target="_blank" 
                  rel="noopener noreferrer"
-                 className="flex items-center gap-2 bg-white text-[#006a4e] px-5 py-2.5 rounded-lg font-bold shadow-lg hover:shadow-xl hover:bg-gray-100 transform hover:-translate-y-1 transition-all duration-300"
+                 className="flex items-center gap-2 bg-white text-[#006a4e] dark:bg-emerald-500 dark:text-white px-5 py-2.5 rounded-lg font-bold shadow-lg hover:shadow-xl hover:bg-gray-100 dark:hover:bg-emerald-400 transform hover:-translate-y-1 transition-all duration-300"
                >
-                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-500 dark:text-yellow-300 dark:fill-yellow-300" />
                  Star on GitHub
                </a>
                
@@ -130,7 +122,7 @@ export default async function Home() {
           </div>
 
           {/* COPYRIGHT */}
-          <div className="mt-12 pt-6 border-t border-green-800/50 text-center text-xs text-green-300/60">
+          <div className="mt-12 pt-6 border-t border-green-800/50 dark:border-slate-800 text-center text-xs text-green-300/60 dark:text-slate-500">
             &copy; {new Date().getFullYear()} Gov.bd Monitor. All rights reserved. Built for Bangladesh.
           </div>
         </div>

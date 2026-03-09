@@ -48,7 +48,7 @@ export async function GET(req: Request) {
     };
 
     const sites = await collection.find(filter)
-      .sort({ status: 1, name: 1 }) 
+      .sort({ status: -1, name: 1 }) 
       .limit(100) 
       .toArray();
 
