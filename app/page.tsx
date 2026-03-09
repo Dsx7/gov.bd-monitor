@@ -98,10 +98,19 @@ export default async function Home() {
                </div>
             </div>
 
-            {/* 3. REPO LINK (CTA) */}
+            {/* 3. REPO & API LINKS (CTA) */}
             <div className="flex flex-col items-center md:items-end gap-3">
-               <p className="text-xs font-bold uppercase tracking-widest text-green-300">Open Source</p>
+               <p className="text-xs font-bold uppercase tracking-widest text-green-300">Developers</p>
                
+               {/* 🟢 NEW: API DOCS BUTTON */}
+               <a 
+                 href="/api-docs" 
+                 className="flex items-center gap-2 text-white hover:text-green-200 font-bold transition-colors text-sm mb-1"
+               >
+                 <Code className="h-4 w-4" />
+                 View API Documentation
+               </a>
+
                <a 
                  href="https://github.com/Dsx7/gov.bd-monitor" 
                  target="_blank" 
