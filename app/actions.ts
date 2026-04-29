@@ -2,13 +2,13 @@
 
 import connectDB from "@/lib/db";
 import { Site } from "@/models/Site";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_cache } from "next/cache";
 import { cookies } from "next/headers";
 
 // ==========================================================
-// 1. FRONTEND DATA FETCHER (With Filters)
+// 1. INTERNAL DATABASE FETCHER (Hidden from Frontend)
 // ==========================================================
-export async function getSites(
+async function fetchSitesFromDb(
   query: string, 
   page: number, 
   category?: string, 
@@ -41,7 +41,7 @@ export async function getSites(
     filter.status = status === "Online" ? "UP" : "DOWN";
   }
 
-  // Parallel Fetching for Speed (🟢 ADDED: latestUpdate check)
+  // Parallel Fetching for Speed
   const [sites, totalCount, stats, latestUpdate] = await Promise.all([
     // Fetch Filtered Sites
     Site.find(filter)
@@ -66,7 +66,7 @@ export async function getSites(
       }
     ]),
 
-    // 🟢 NEW: Get the absolute most recent scan time across the whole DB
+    // Get the absolute most recent scan time across the whole DB
     Site.findOne().sort({ lastChecked: -1 }).select('lastChecked').lean()
   ]);
 
@@ -79,8 +79,35 @@ export async function getSites(
     totalCount,
     totalPages: Math.ceil(totalCount / limit),
     globalStats,
-    lastUpdate: latestUpdate?.lastChecked || null // 🟢 Send this to frontend
+    lastUpdate: latestUpdate?.lastChecked || null 
   };
+}
+
+// ==========================================================
+// 1.5 THE CACHED WRAPPER (Saves DB from Crashing)
+// ==========================================================
+const getCachedSites = unstable_cache(
+  async (query: string, page: number, category?: string, status?: string) => {
+    return await fetchSitesFromDb(query, page, category, status);
+  },
+  ['sites-search-cache'], // Unique cache prefix
+  { 
+    revalidate: 60, // 🟢 Cache lives for 60 seconds!
+    tags: ['sites'] 
+  }
+);
+
+// ==========================================================
+// 1.7 FRONTEND EXPORT (The actual Server Action)
+// ==========================================================
+export async function getSites(
+  query: string, 
+  page: number, 
+  category?: string, 
+  status?: string
+) {
+  // Safely call the cached function
+  return await getCachedSites(query, page, category, status);
 }
 
 // ==========================================================
@@ -138,7 +165,7 @@ export async function approveSite(id: string) {
   await connectDB();
   await Site.findByIdAndUpdate(id, { isApproved: true });
   revalidatePath("/admin");
-  revalidatePath("/");
+  revalidatePath("/"); // Also clears the frontend cache
 }
 
 export async function rejectSite(id: string) {

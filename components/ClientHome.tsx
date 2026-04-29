@@ -14,21 +14,21 @@ import PopularServices from "./PopularServices";
 import { toast } from "sonner"; 
 
 export default function ClientHome({ initialData }: any) {
-  // --- STATE ---
   const [sites, setSites] = useState(initialData.sites || []);
   const [stats, setStats] = useState(initialData.globalStats || { total: 0, up: 0, down: 0 });
   const [lastUpdate, setLastUpdate] = useState(initialData.lastUpdate);
   const [totalPages, setTotalPages] = useState(initialData.totalPages || 0);
-  
   const [page, setPage] = useState(1);
-  const [text, setText] = useState(""); // 🟢 Clean URL: No longer reading from searchParams
-  const [query] = useDebounce(text, 400); // 400ms delay for faster feel
-  
+  const [text, setText] = useState(""); 
+  const [query] = useDebounce(text, 400); 
   const [category, setCategory] = useState("All");
   const [status, setStatus] = useState("All");
   const [loading, setLoading] = useState(false);
 
-  // --- FETCH DATA (SILENTLY IN BACKGROUND) ---
+  /* Fixed Gov.bd Favicon URL to reduce network calls 
+  */
+  const GOV_FAVICON = "https://asu.ruma.bandarban.gov.bd/site-assets/images/favicon.ico";
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -38,13 +38,9 @@ export default function ClientHome({ initialData }: any) {
       if(data.lastUpdate) setLastUpdate(data.lastUpdate);
       setLoading(false);
     };
-    
-    // Only fetch if it's not the initial mount with empty parameters
-    // or if the parameters have actually changed.
     fetchData();
   }, [query, page, category, status]);
 
-  // Reset to page 1 when search or filters change
   useEffect(() => setPage(1), [query, category, status]);
 
   const handleQuickSearch = (term: string) => {
@@ -54,12 +50,9 @@ export default function ClientHome({ initialData }: any) {
 
   const handleShare = async (site: any) => {
     const shareText = `🚨 ${site.name} is currently ${site.status}! Checked via Gov.bd Monitor.`;
-    const shareUrl = `https://gov-bd-monitor.vercel.app/`; // Clean URL share
-
+    const shareUrl = `https://gov-bd-monitor.vercel.app/`;
     if (navigator.share) {
-      try {
-        await navigator.share({ title: "Gov.bd Monitor", text: shareText, url: shareUrl });
-      } catch (err) { console.log("Share cancelled"); }
+      try { await navigator.share({ title: "Gov.bd Monitor", text: shareText, url: shareUrl }); } catch (err) {}
     } else {
       navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
       toast.success("Copied to clipboard!");
@@ -69,14 +62,11 @@ export default function ClientHome({ initialData }: any) {
   const categories = ["All", "Education", "Health", "Law & Order", "Agriculture", "Local Admin", "General"];
   const upRate = stats.total > 0 ? ((stats.up / stats.total) * 100).toFixed(1) : "0.0";
   const timeSinceUpdate = lastUpdate ? formatDistanceToNow(new Date(lastUpdate), { addSuffix: true }) : "recently";
-
-  // Check if we are currently waiting for the debounce or the API
   const isSearching = text !== query || loading;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       
-      {/* 📊 HEADER STATS */}
       <div className="bg-[#006a4e] dark:bg-emerald-900/40 text-white rounded-2xl p-6 mb-8 shadow-lg relative overflow-hidden ring-4 ring-[#006a4e]/10 dark:ring-emerald-500/20 backdrop-blur-sm">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
@@ -97,7 +87,6 @@ export default function ClientHome({ initialData }: any) {
                 </div>
               </div>
             </div>
-
             <div className="flex gap-4 md:gap-8">
               <StatBox label="UPTIME" value={`${upRate}%`} color="bg-[#00523c] dark:bg-slate-800/50" textColor="text-emerald-400" labelColor="text-emerald-200/70" />
               <StatBox label="ONLINE" value={stats.up} color="bg-[#00523c] dark:bg-slate-800/50" textColor="text-white" labelColor="text-green-300 dark:text-emerald-400" />
@@ -108,11 +97,8 @@ export default function ClientHome({ initialData }: any) {
 
       <PopularServices onQuickSearch={handleQuickSearch} />
 
-      {/* 🔍 FILTERS BAR */}
       <div className="sticky top-4 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-800 ring-1 ring-gray-200 dark:ring-slate-800 mb-8 transition-all">
         <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-          
-          {/* SEARCH INPUT */}
           <div className="relative flex-1 w-full group">
             <Search className={`absolute left-3 top-3 h-5 w-5 transition-colors ${isSearching ? 'text-[#006a4e] dark:text-emerald-500' : 'text-gray-400 dark:text-slate-500'}`} />
             <Input 
@@ -121,15 +107,12 @@ export default function ClientHome({ initialData }: any) {
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
-            {/* 🟢 Loading Spinner inside Search Bar */}
             {isSearching && (
               <div className="absolute right-3 top-3 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#006a4e] dark:border-emerald-500"></div>
               </div>
             )}
           </div>
-
-          {/* DROPDOWNS */}
           <div className="flex w-full md:w-auto gap-2">
             <select className="h-11 px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm font-medium text-gray-700 dark:text-slate-300 outline-none focus:border-[#006a4e] dark:focus:border-emerald-500 focus:ring-2 focus:ring-[#006a4e]/20 w-1/2 md:w-auto" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="All">All Status</option>
@@ -143,67 +126,52 @@ export default function ClientHome({ initialData }: any) {
         </div>
       </div>
 
-      {/* 📦 RESULTS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        
         {loading && sites.length === 0 ? (
            Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)
         ) : sites.length > 0 ? (
           sites.map((site: any) => {
             const isUp = site.status === "UP";
             const timeAgo = site.lastChanged ? formatDistanceToNow(new Date(site.lastChanged), { addSuffix: true }) : "recently";
-            const faviconUrl = `https://www.google.com/s2/favicons?domain=${site.url}&sz=128`;
 
             return (
               <div 
-  key={site._id} 
-  onClick={() => window.open(site.url, '_blank')}
-  className={`cursor-pointer group bg-white dark:bg-slate-900 rounded-xl p-5 border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col justify-between ${isUp ? 'border-gray-100 dark:border-slate-800 hover:border-green-200 dark:hover:border-emerald-700' : 'border-red-50 dark:border-rose-900/30 hover:border-red-200 dark:hover:border-rose-800'}`}
->
-                
-                {/* Status Top Line */}
+                key={site._id} 
+                onClick={() => window.open(site.url, '_blank')}
+                className={`cursor-pointer group bg-white dark:bg-slate-900 rounded-xl p-5 border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col justify-between ${isUp ? 'border-gray-100 dark:border-slate-800 hover:border-green-200 dark:hover:border-emerald-700' : 'border-red-50 dark:border-rose-900/30 hover:border-red-200 dark:hover:border-rose-800'}`}
+              >
                 <div className={`absolute top-0 left-0 w-full h-1.5 ${isUp ? 'bg-[#006a4e] dark:bg-emerald-500' : 'bg-[#f42a41] dark:bg-rose-500'}`} />
-
                 <div>
                   <div className="flex justify-between items-start mb-4 mt-1">
                     <div className={`relative h-12 w-12 rounded-xl flex items-center justify-center p-1 border overflow-hidden transition-colors ${isUp ? 'bg-white dark:bg-slate-950 border-green-50 dark:border-emerald-900/50' : 'bg-red-50 dark:bg-rose-950/30 border-red-100 dark:border-rose-900'}`}>
-                      <img src={faviconUrl} alt="" className="h-8 w-8 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-                      <div className="hidden">{isUp ? <Wifi className="h-6 w-6 text-[#006a4e] dark:text-emerald-500" /> : <WifiOff className="h-6 w-6 text-[#f42a41] dark:text-rose-500" />}</div>
+                      <img src={GOV_FAVICON} alt="" className="h-7 w-7 object-contain group-hover:scale-110 transition-transform duration-300" />
                     </div>
                     
                     <div className="flex items-center gap-2">
-  <button 
-    onClick={(e) => {
-      e.stopPropagation(); // 👈 This stops the card click!
-      handleShare(site);
-    }} 
-    className="p-1.5 rounded-md text-gray-400 hover:text-[#006a4e] dark:hover:text-emerald-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" 
-    title="Share Status"
-  >
-    <Share2 className="h-4 w-4" />
-  </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleShare(site); }} 
+                        className="p-1.5 rounded-md text-gray-400 hover:text-[#006a4e] dark:hover:text-emerald-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" 
+                        title="Share Status"
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </button>
                       <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase ${isUp ? 'bg-green-50 dark:bg-emerald-950/50 text-[#006a4e] dark:text-emerald-400' : 'bg-red-50 dark:bg-rose-950/50 text-[#f42a41] dark:text-rose-400'}`}>
                         {isUp ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
                         {isUp ? "Online" : "Offline"}
                       </div>
                     </div>
                   </div>
-
                   <div>
                     <h3 className="font-bold text-gray-800 dark:text-slate-100 text-lg leading-tight line-clamp-1" title={site.name}>{site.name}</h3>
                     {site.category && <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 font-medium badge bg-gray-50 dark:bg-slate-800 inline-block px-2 py-0.5 rounded">{site.category}</p>}
                   </div>
-                  
                   <a href={site.url} target="_blank" rel="nofollow noopener noreferrer" className="mt-3 text-sm text-gray-500 dark:text-slate-400 hover:text-[#006a4e] dark:hover:text-emerald-400 flex items-center gap-1 truncate transition-colors font-medium group-hover:underline decoration-dotted underline-offset-4">
                     {site.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                     <ExternalLink className="h-3 w-3 opacity-50" />
                   </a>
                 </div>
-
                 <div className="mt-6">
-                  {/* History Bar Chart */}
                   <UptimeHistory history={site.history} />
-
                   <div className="pt-3 mt-3 border-t border-gray-50 dark:border-slate-800 flex justify-between items-center text-xs font-semibold text-gray-400 dark:text-slate-500">
                     <span className="flex items-center gap-1">
                       {isUp ? "Stable since" : "Down since"} <span className="text-gray-600 dark:text-slate-400">{timeAgo}</span>
@@ -211,7 +179,6 @@ export default function ClientHome({ initialData }: any) {
                     {site.latency > 0 && <span className="bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-gray-600 dark:text-slate-400">{site.latency}ms</span>}
                   </div>
                 </div>
-
               </div>
             );
           })
@@ -220,44 +187,27 @@ export default function ClientHome({ initialData }: any) {
 
       {sites.length === 0 && !loading && (
         <div className="flex flex-col items-center justify-center py-24 px-4 bg-white dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-gray-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
-          {/* Subtle Background Gradient */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-50 dark:to-[#0b1120] pointer-events-none"></div>
-          
-          {/* Animated Icon Wrapper */}
           <div className="relative mb-6 z-10">
             <div className="absolute inset-0 bg-[#f42a41]/10 dark:bg-rose-500/10 rounded-full animate-ping"></div>
             <div className="relative bg-white dark:bg-slate-950 p-5 rounded-full shadow-lg border border-gray-100 dark:border-slate-800 text-gray-400 dark:text-slate-500 group-hover:text-[#f42a41] dark:group-hover:text-rose-500 transition-colors duration-500">
               <SearchX className="h-10 w-10" />
             </div>
           </div>
-
-          <h3 className="text-2xl font-extrabold text-gray-800 dark:text-slate-200 mb-2 relative z-10 tracking-tight">
-            No websites found
-          </h3>
-          
+          <h3 className="text-2xl font-extrabold text-gray-800 dark:text-slate-200 mb-2 relative z-10 tracking-tight">No websites found</h3>
           <p className="text-gray-500 dark:text-slate-400 text-center max-w-md mb-8 relative z-10 leading-relaxed">
             We couldn't find any government services matching {text ? (
               <span className="font-semibold text-gray-700 dark:text-slate-300 px-1">"{text}"</span>
             ) : "your current filters."}
           </p>
-
-          {/* 🟢 Actionable Clear Button */}
-          <button 
-            onClick={() => {
-              setText("");
-              setCategory("All");
-              setStatus("All");
-            }}
-            className="relative z-10 flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-xl font-bold transition-all shadow-sm hover:shadow-md active:scale-95 border border-gray-200 dark:border-slate-700"
-          >
+          <button onClick={() => { setText(""); setCategory("All"); setStatus("All"); }} className="relative z-10 flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-xl font-bold transition-all shadow-sm hover:shadow-md active:scale-95 border border-gray-200 dark:border-slate-700">
             <XCircle className="h-5 w-5 opacity-70" />
             Clear Search & Filters
           </button>
         </div>
       )}
 
-      {/* 📄 PAGINATION */}
-      {totalPages > 1 && (
+      {totalPages > 1 && !loading && (
         <div className="flex justify-center items-center gap-4 pt-12 pb-20">
           <Button variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="rounded-full px-6 border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
             <ChevronLeft className="h-4 w-4 mr-2" /> Prev
@@ -272,12 +222,10 @@ export default function ClientHome({ initialData }: any) {
   );
 }
 
-// 🟢 UPTIME HISTORY COMPONENT
 function UptimeHistory({ history = [] }: { history: any[] }) {
   const TOTAL_BARS = 15;
   const safeHistory = Array.isArray(history) ? history : [];
   const paddedHistory = [...Array(TOTAL_BARS - safeHistory.length).fill(null), ...safeHistory].slice(-TOTAL_BARS);
-
   return (
     <div className="group/history relative">
       <div className="flex justify-between items-center mb-1.5">
@@ -288,25 +236,18 @@ function UptimeHistory({ history = [] }: { history: any[] }) {
           </span>
         )}
       </div>
-      
       <div className="flex items-center gap-[2px] h-6 w-full">
         {paddedHistory.map((record, i) => {
           let bgColor = "bg-gray-100 dark:bg-slate-800"; 
           let tooltip = "No data yet";
-          
           if (record) {
             bgColor = record.status === "UP" ? "bg-[#006a4e]/80 dark:bg-emerald-500/80 hover:bg-[#006a4e] dark:hover:bg-emerald-400" : "bg-[#f42a41]/80 dark:bg-rose-500/80 hover:bg-[#f42a41] dark:hover:bg-rose-400";
             const time = format(new Date(record.timestamp), "MMM d, h:mm a");
             tooltip = `${record.status} at ${time} (${record.latency}ms)`;
             if(record.error) tooltip += ` - ${record.error}`;
           }
-
           return (
-            <div 
-              key={i} 
-              className={`flex-1 h-full rounded-[2px] transition-colors cursor-help ${bgColor}`}
-              title={tooltip}
-            />
+            <div key={i} className={`flex-1 h-full rounded-[2px] transition-colors cursor-help ${bgColor}`} title={tooltip} />
           );
         })}
       </div>
@@ -314,7 +255,6 @@ function UptimeHistory({ history = [] }: { history: any[] }) {
   );
 }
 
-// 🟢 SKELETON LOADER COMPONENT
 function SkeletonCard() {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-gray-100 dark:border-slate-800 shadow-sm relative overflow-hidden h-[260px]">
@@ -332,7 +272,6 @@ function SkeletonCard() {
   );
 }
 
-// 🟢 STAT BOX COMPONENT
 function StatBox({ label, value, color, textColor, labelColor }: any) {
   return (
     <div className={`flex flex-col items-center p-3 rounded-lg min-w-[80px] ${color}`}>
